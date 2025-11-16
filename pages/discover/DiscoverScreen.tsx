@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useRef } from 'react';
 import { mockProfiles } from '../../data/mockProfiles';
 import ProfileCard from '../../components/discover/ProfileCard';
@@ -63,11 +64,6 @@ const DiscoverScreen: React.FC = () => {
     setProfileModalOpen(true);
   };
   
-  const handleInitiateConnection = () => {
-    setMatchedProfile(null);
-    setQuestionModalOpen(true);
-  };
-  
   const handleSendQuestion = (questionAudio: Blob) => {
     if(activeProfile && user) {
         addMatch(activeProfile, {
@@ -80,7 +76,8 @@ const DiscoverScreen: React.FC = () => {
         });
     }
     setQuestionModalOpen(false);
-    setActiveProfile(null); // Clear active profile after asking
+    setActiveProfile(null);
+    setMatchedProfile(null);
   };
 
   return (
@@ -117,10 +114,7 @@ const DiscoverScreen: React.FC = () => {
         isOpen={!!matchedProfile}
         currentUser={user}
         matchedProfile={matchedProfile}
-        onClose={() => {
-            if(matchedProfile) addMatch(matchedProfile); // Add as NEW_MATCH if they keep exploring
-            setMatchedProfile(null);
-        }}
+        onClose={() => setMatchedProfile(null)}
         onInitiateConnection={() => {
             setActiveProfile(matchedProfile); // Set profile to ask question to
             setMatchedProfile(null);
@@ -132,9 +126,9 @@ const DiscoverScreen: React.FC = () => {
         isOpen={isQuestionModalOpen}
         profile={activeProfile}
         onClose={() => {
-            if(activeProfile) addMatch(activeProfile); // Add as NEW_MATCH if they close
             setQuestionModalOpen(false);
             setActiveProfile(null);
+            setMatchedProfile(null);
         }}
         onSend={handleSendQuestion}
       />

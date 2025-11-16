@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useOnboarding } from '../../../hooks/useOnboarding';
 import VoiceRecorder from '../../../components/VoiceRecorder';
@@ -66,8 +67,7 @@ const VoicePromptsStep: React.FC = () => {
                     <VoiceRecorder 
                         maxDuration={30}
                         onRecordingComplete={(blob) => handleRecordingUpdate(promptItem.id, blob)}
-                        // @FIX: Ensure the prop type matches `Blob | null`. If the value is 'recorded' (a string), pass a new Blob to keep the UI state as 'recorded'.
-                        existingRecording={typeof promptItem.answer !== 'string' ? promptItem.answer : new Blob()}
+                        existingRecording={promptItem.answer instanceof Blob ? promptItem.answer : null}
                     />
                 </div>
             ))}

@@ -33,29 +33,6 @@ export const MatchProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }, [user, refreshMatchesFromStorage]);
 
 
-  useEffect(() => {
-    if (user && !isLoading) { // Ensure this runs after initial load
-      const currentMatches = getMatches(user.id);
-      
-      const hasNewMatch = currentMatches.find(m => m.status === 'NEW_MATCH');
-      if (hasNewMatch) {
-          const matchToUpdate = hasNewMatch;
-          const updatedMatch = {
-            ...matchToUpdate,
-            status: 'QUESTION_RECEIVED' as const,
-            customQuestion: {
-              askedBy: matchToUpdate.id,
-              questionAudio: 'recorded' as const,
-              questionTimestamp: Date.now() - 10000,
-            }
-          };
-          const otherMatches = currentMatches.filter(m => m.id !== hasNewMatch.id);
-          saveMatches(user.id, [...otherMatches, updatedMatch]);
-          refreshMatchesFromStorage();
-      }
-    }
-  }, [user, isLoading, refreshMatchesFromStorage]);
-
   const persistMatches = useCallback((updatedMatches: Match[]) => {
     if (user) {
       saveMatches(user.id, updatedMatches);
@@ -89,6 +66,33 @@ export const MatchProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return updatedMatches;
     });
   }, [persistMatches]);
+
+  useEffect(() => {
+    if (user && !isLoading && matches.length > 0) {
+      // Only auto-transition the FIRST match that's in QUESTION_SENT_BY_ME status
+      const sentMatch = matches.find(m => m.status === 'QUESTION_SENT_BY_ME');
+      if (sentMatch && sentMatch.customQuestion) {
+        setTimeout(() => {
+          updateMatch(sentMatch.id, { 
+            status: 'QUESTION_RECEIVED',
+            customQuestion: {
+              ...sentMatch.customQuestion,
+              answerAudio: 'recorded',
+              answerTimestamp: Date.now()
+            }
+          });
+          // Then transition to QNA_COMPLETE
+          setTimeout(() => {
+            updateMatch(sentMatch.id, { status: 'QNA_COMPLETE' });
+            // Then to CALL_READY
+            setTimeout(() => {
+              updateMatch(sentMatch.id, { status: 'CALL_READY' });
+            }, 1500);
+          }, 2000);
+        }, 3000); // Simulate partner answering after 3 seconds
+      }
+    }
+  }, [matches, user, isLoading, updateMatch]);
   
   const removeMatch = useCallback((matchId: string) => {
     setMatches(prevMatches => {

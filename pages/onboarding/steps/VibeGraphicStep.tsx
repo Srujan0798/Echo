@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useOnboarding } from '../../../hooks/useOnboarding';
 import { Check } from '../../../components/icons';

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
@@ -89,23 +90,19 @@ const ProfileScreen: React.FC = () => {
         
         <SettingsSection title="Account Settings">
           <SettingsItem icon={<Shield />} label="Match Notifications">
-{/* @FIX: Pass the full notifications object to satisfy the UserSettings type. */}
              <input type="checkbox" className="toggle toggle-accent" checked={settings.notifications.matches} onChange={e => updateSettings({ notifications: { ...settings.notifications, matches: e.target.checked}})} />
           </SettingsItem>
            <SettingsItem icon={<Shield />} label="Message Notifications">
-{/* @FIX: Pass the full notifications object to satisfy the UserSettings type. */}
              <input type="checkbox" className="toggle toggle-accent" checked={settings.notifications.messages} onChange={e => updateSettings({ notifications: { ...settings.notifications, messages: e.target.checked}})} />
           </SettingsItem>
         </SettingsSection>
         
         <SettingsSection title="Privacy">
            <SettingsItem icon={<Shield />} label="Show me on ECHO">
-{/* @FIX: Pass the full privacy object to satisfy the UserSettings type. */}
              <input type="checkbox" className="toggle toggle-accent" checked={settings.privacy.showOnEcho} onChange={e => updateSettings({ privacy: { ...settings.privacy, showOnEcho: e.target.checked}})} />
            </SettingsItem>
            <div className="p-4">
              <label className="text-sm text-[#B3B3B3] mb-2 block">Distance Preference</label>
-{/* @FIX: Pass the full privacy object to satisfy the UserSettings type. */}
              <input type="range" min="1" max="100" value={settings.privacy.distance} onChange={e => updateSettings({ privacy: { ...settings.privacy, distance: parseInt(e.target.value)} })} className="range range-xs range-accent" />
              <div className="text-right text-sm font-bold">{settings.privacy.distance} mi.</div>
            </div>

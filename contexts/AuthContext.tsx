@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { User, AuthContextType, Profile } from '../types';
 
@@ -62,8 +63,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const logout = useCallback(() => {
     setUser(null);
     setIsProfileComplete(false);
-    // Keep profile data in case user logs back in, but clear session user.
     localStorage.removeItem('echo-user');
+    localStorage.removeItem('echo-app-mode'); // Clear mode selection
   }, []);
   
   const completeOnboarding = useCallback((profile: Profile) => {

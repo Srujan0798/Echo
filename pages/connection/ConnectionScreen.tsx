@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Match } from '../../types';
 import { PhoneOff, MicOff, Volume2 } from '../../components/icons';
@@ -8,24 +8,31 @@ import Button from '../../components/Button';
 import { useAuth } from '../../hooks/useAuth';
 import CallCompletionModal from '../../components/connection/CallCompletionModal';
 import ConfirmationModal from '../../components/settings/ConfirmationModal';
+import { getMatches } from '../../utils/localStorage';
+import DeveloperControls from '../../components/DeveloperControls';
+import { useDeveloper } from '../../hooks/useDeveloper';
+import { simulatePartnerCallDecision } from '../../utils/mockBehaviors';
 
 const ConnectionScreen: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { state } = useLocation();
   const { updateMatch, removeMatch } = useMatches();
+  const { skipTimers } = useDeveloper();
   const match: Match | undefined = state?.match;
   
-  const CALL_DURATION_SECONDS = 5 * 60; // 5 minutes
+  const CALL_DURATION_SECONDS = skipTimers ? 30 : 5 * 60; // 30 seconds in dev mode
   const [timeLeft, setTimeLeft] = useState(CALL_DURATION_SECONDS);
   const [isCompletionModalOpen, setCompletionModalOpen] = useState(false);
   const [isExitModalOpen, setExitModalOpen] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const decisionMade = useRef(false);
 
-  const handleEndCall = () => {
+  // FIX: Added useCallback to the import from 'react'
+  const handleEndCall = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     setCompletionModalOpen(true);
-  };
+  }, []);
 
   useEffect(() => {
     if (!match) {
@@ -44,46 +51,30 @@ const ConnectionScreen: React.FC = () => {
       });
     }, 1000);
 
-    // Navigation guard
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = '';
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
     return () => {
       if(timerRef.current) clearInterval(timerRef.current);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [match, navigate]);
+  }, [match, navigate, handleEndCall]);
   
   const handleDecision = (decision: 'CONTINUE' | 'NO_CONNECTION') => {
-    if (!match) return;
-    const ourDecisionUpdate = {
-      status: 'CALL_COMPLETED_WAITING' as const,
-      callDecision: { ...match.callDecision, userDecision: decision, decidedAt: Date.now() }
-    };
-    updateMatch(match.id, ourDecisionUpdate);
+    if (!match || !user || decisionMade.current) return;
+    decisionMade.current = true;
+    
+    updateMatch(match.id, {
+      status: 'CALL_COMPLETED_WAITING',
+      callDecision: { 
+        userDecision: decision, 
+        theirDecision: null,
+        decidedAt: Date.now() 
+      }
+    });
+    
+    // Simulate partner's decision
+    const theirDecision = Math.random() > 0.3 ? 'CONTINUE' : 'NO_CONNECTION';
+    simulatePartnerCallDecision(match.id, user.id, theirDecision);
+
     setCompletionModalOpen(false);
     navigate('/matches', { replace: true });
-    
-    setTimeout(() => {
-        const theirDecision = Math.random() > 0.3 ? 'CONTINUE' : 'NO_CONNECTION';
-        if (decision === 'CONTINUE' && theirDecision === 'CONTINUE') {
-            const now = Date.now();
-            updateMatch(match.id, {
-                status: 'CHAT_ACTIVE',
-                chatStartedTimestamp: now,
-                revealStatus: {
-                  softRevealUnlockedAt: now + 24 * 60 * 60 * 1000,
-                },
-                callDecision: { ...ourDecisionUpdate.callDecision, theirDecision }
-            });
-        } else {
-            removeMatch(match.id);
-        }
-    }, 2500);
   };
   
   if (!match) return null;
@@ -94,15 +85,10 @@ const ConnectionScreen: React.FC = () => {
     return `${mins}:${secs}`;
   };
 
-  const DebugPanel = () => (
-    <div className="absolute bottom-0 left-0 right-0 bg-black/50 p-2 text-xs text-white text-center">
-      <p className="font-bold mb-1">Debug Panel</p>
-      <div className="flex justify-center gap-2">
-        <button onClick={() => setTimeLeft(p => Math.max(0, p - 60))} className="bg-gray-600 px-2 py-1 rounded">-1 Min</button>
-        <button onClick={handleEndCall} className="bg-red-600 px-2 py-1 rounded">End Call Now</button>
-      </div>
-    </div>
-  );
+  const devActions = [
+    { label: 'Skip to End', onClick: () => setTimeLeft(5), variant: 'primary' as const },
+    { label: 'Force End Call', onClick: handleEndCall, variant: 'danger' as const },
+  ];
 
   return (
     <>
@@ -124,7 +110,6 @@ const ConnectionScreen: React.FC = () => {
             </Button>
             <button className="bg-white/10 p-4 rounded-full text-white"><Volume2 size={24} /></button>
         </div>
-        <DebugPanel />
       </div>
 
       <CallCompletionModal 
@@ -141,6 +126,7 @@ const ConnectionScreen: React.FC = () => {
       >
         <p className="text-[#B3B3B3]">Are you sure you want to end your call with {match.profile.name}?</p>
       </ConfirmationModal>
+      <DeveloperControls contextActions={devActions} />
     </>
   );
 };

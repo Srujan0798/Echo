@@ -1,3 +1,4 @@
+
 import { ChatMessage, DiscoveryProfile } from '../types';
 
 export const generateInitialChat = (matchProfile: DiscoveryProfile): ChatMessage[] => {

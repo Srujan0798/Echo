@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect } from 'react';
 import { DiscoveryProfile } from '../../types';
 import useIntersectionObserver from '../../hooks/useIntersectionObserver';

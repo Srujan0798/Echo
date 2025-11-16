@@ -1,3 +1,4 @@
+
 import { DiscoveryProfile } from '../types';
 
 // Using picsum.photos with seeds for consistent random images

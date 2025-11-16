@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMatches } from '../../hooks/useMatches';
@@ -11,7 +12,7 @@ import { formatChatTimestampGroup } from '../../utils/time';
 import SoftRevealCard from '../../components/chat/SoftRevealCard';
 import ReadyToRevealModal from '../../components/chat/ReadyToRevealModal';
 import AntiGhostingModal from '../../components/chat/AntiGhostingModal';
-import { getChat, saveChat, getMatches } from '../../utils/localStorage';
+import { getChat, saveChat } from '../../utils/localStorage';
 import ChatSkeleton from '../../components/skeletons/ChatSkeleton';
 import Button from '../../components/Button';
 import { calculateRevealStatus, RevealStatusInfo } from '../../utils/reveal';
@@ -19,7 +20,7 @@ import RevealCountdown from '../../components/chat/RevealCountdown';
 import RevealTimeline from '../../components/chat/RevealTimeline';
 import { useAuth } from '../../hooks/useAuth';
 import { simulatePartnerReadyToReveal } from '../../utils/mockBehaviors';
-
+import DeveloperControls from '../../components/DeveloperControls';
 
 type ChatItem = ChatMessage | { type: 'DATE_SEPARATOR'; date: string; id: string } | { type: 'SOFT_REVEAL'; id: string };
 
@@ -38,6 +39,7 @@ const ChatScreen: React.FC = () => {
   const [isAntiGhostingModalOpen, setAntiGhostingModalOpen] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const replyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (matchId) {
@@ -58,6 +60,15 @@ const ChatScreen: React.FC = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
+  
+  // Cleanup timeout on unmount
+  useEffect(() => {
+      return () => {
+          if (replyTimeoutRef.current) {
+              clearTimeout(replyTimeoutRef.current);
+          }
+      }
+  }, []);
 
   const revealStatus = useMemo<RevealStatusInfo | null>(() => {
     if (!match) return null;
@@ -103,7 +114,7 @@ const ChatScreen: React.FC = () => {
     setIsTyping(true);
     const replyDelay = Math.random() * 3000 + 2000; // 2-5 seconds
 
-    setTimeout(() => {
+    replyTimeoutRef.current = setTimeout(() => {
       const replyMessage = generateAutoReply(newMessage);
       replyMessage.senderId = match.profile.id; // Set correct sender ID
       
@@ -134,6 +145,28 @@ const ChatScreen: React.FC = () => {
 
     return items;
   }, [messages, revealStatus]);
+
+  const devActions = revealStatus ? [
+    revealStatus.phase === 'COUNTDOWN' ? {
+      label: 'Skip to Soft Reveal',
+      onClick: () => {
+        if (match) {
+          updateMatch(match.id, {
+            revealStatus: { 
+              ...match.revealStatus, 
+              softRevealUnlockedAt: Date.now() - 1000 
+            }
+          });
+        }
+      },
+      variant: 'primary' as const
+    } : null,
+    revealStatus.canInitiateFullReveal ? {
+      label: 'Trigger Full Reveal',
+      onClick: () => handleReadyToReveal(),
+      variant: 'primary' as const
+    } : null,
+  ].filter(Boolean) : [];
   
   if (isLoading) {
     return (
@@ -217,6 +250,7 @@ const ChatScreen: React.FC = () => {
             setTimeout(() => handleEndConnection(), 500);
         }}
       />
+      <DeveloperControls contextActions={devActions as any[]} />
     </div>
   );
 };

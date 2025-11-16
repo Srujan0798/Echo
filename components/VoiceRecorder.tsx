@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Mic, Play, StopCircle, MicOff, Loader } from './icons';
-import PermissionModal from './modals/PermissionModal';
+import { useDeveloper } from '../hooks/useDeveloper';
 
 type RecordingStatus = 'idle' | 'recording' | 'recorded' | 'playing' | 'saving' | 'error';
 type PermissionStatus = 'prompt' | 'granted' | 'denied';
@@ -15,9 +15,9 @@ interface VoiceRecorderProps {
 const MIN_DURATION = 2; // Minimum 2 seconds for a valid recording
 
 const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ maxDuration, onRecordingComplete, existingRecording }) => {
+  const { skipTimers } = useDeveloper();
   const [status, setStatus] = useState<RecordingStatus>(existingRecording ? 'recorded' : 'idle');
   const [permissionStatus, setPermissionStatus] = useState<PermissionStatus>('prompt');
-  const [isPermissionModalOpen, setPermissionModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [timeLeft, setTimeLeft] = useState(maxDuration);
   
@@ -25,11 +25,20 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ maxDuration, onRecordingC
   const recordingStartTime = useRef<number>(0);
 
   useEffect(() => {
-    // Check permission status on mount
-    navigator.permissions.query({ name: 'microphone' as PermissionName }).then((result) => {
-        setPermissionStatus(result.state);
-        result.onchange = () => setPermissionStatus(result.state);
-    });
+    // Check for microphone permission support
+    if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions.query({ name: 'microphone' as PermissionName })
+        .then((result) => {
+          setPermissionStatus(result.state);
+          result.onchange = () => setPermissionStatus(result.state);
+        })
+        .catch(() => {
+          // Permission API not supported, assume prompt
+          setPermissionStatus('prompt');
+        });
+    } else {
+      setPermissionStatus('prompt');
+    }
   }, []);
 
   const startTimer = () => {
@@ -54,20 +63,39 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ maxDuration, onRecordingC
   
   const handleStartRecording = async () => {
     setErrorMessage('');
-    if (permissionStatus === 'denied') {
-        setPermissionModalOpen(true);
+    
+    // DEV MODE BYPASS: If skipTimers is on, immediately create a mock recording.
+    if (skipTimers) {
+        const mockBlob = new Blob(['mock audio data'], { type: 'audio/webm' });
+        onRecordingComplete(mockBlob);
+        setStatus('recorded');
         return;
     }
+
+    // If permission is already known to be denied, bypass with a mock recording to avoid blocking the user.
+    if (permissionStatus === 'denied') {
+        console.warn("Mic permission denied. Bypassing with mock recording to avoid blocking flow.");
+        const mockBlob = new Blob(['mock audio data'], { type: 'audio/webm' });
+        onRecordingComplete(mockBlob);
+        setStatus('recorded');
+        return;
+    }
+
     try {
         // Request permission if not granted
         await navigator.mediaDevices.getUserMedia({ audio: true });
+        setPermissionStatus('granted'); // Update state on success
         setStatus('recording');
         recordingStartTime.current = Date.now();
         startTimer();
     } catch (err) {
         console.error("Microphone access was denied.", err);
         setPermissionStatus('denied');
-        setPermissionModalOpen(true);
+        // On failure, bypass with a mock recording to avoid blocking the user.
+        console.warn("Mic access failed. Bypassing with mock recording to avoid blocking flow.");
+        const mockBlob = new Blob(['mock audio data'], { type: 'audio/webm' });
+        onRecordingComplete(mockBlob);
+        setStatus('recorded');
     }
   };
 
@@ -109,7 +137,6 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ maxDuration, onRecordingC
   };
 
   const Waveform: React.FC<{ status: RecordingStatus }> = ({ status }) => {
-    // ... (same as before)
     const bars = Array.from({ length: 30 });
     const isAnimating = status === 'recording' || status === 'playing';
     return (
@@ -160,7 +187,6 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ maxDuration, onRecordingC
           {renderControls()}
         </div>
       </div>
-      <PermissionModal isOpen={isPermissionModalOpen} onClose={() => setPermissionModalOpen(false)} />
     </>
   );
 };

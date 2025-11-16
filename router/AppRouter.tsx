@@ -3,6 +3,7 @@ import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { OnboardingProvider } from '../contexts/OnboardingContext';
 import { MatchProvider } from '../contexts/MatchContext';
+import { DeveloperProvider } from '../contexts/DeveloperContext';
 
 // Components
 import ErrorBoundary from '../components/ErrorBoundary';
@@ -15,6 +16,8 @@ import WelcomeScreen from '../pages/WelcomeScreen';
 import TermsScreen from '../pages/TermsScreen';
 import PrivacyScreen from '../pages/PrivacyScreen';
 import ChatScreen from '../pages/chat/ChatScreen';
+import ModeSelectionScreen from '../pages/ModeSelectionScreen';
+
 
 // Main App Screens (Tabs)
 import DiscoverScreen from '../pages/discover/DiscoverScreen';
@@ -35,14 +38,33 @@ import ProfilePreviewStep from '../pages/onboarding/steps/ProfilePreviewStep';
 const AppRouter: React.FC = () => {
   const { isAuthenticated, isLoading, isProfileComplete } = useAuth();
   const [showSplash, setShowSplash] = useState(true);
+  
+  // Initialize state directly from localStorage to ensure correctness on reload
+  const [modeSelected, setModeSelected] = useState(() => !!localStorage.getItem('echo-app-mode'));
+
+  // This effect ensures the state updates correctly on logout without a full reload
+  useEffect(() => {
+    const mode = localStorage.getItem('echo-app-mode');
+    setModeSelected(!!mode);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowSplash(false), 2500);
     return () => clearTimeout(timer);
   }, []);
   
-  if (showSplash || (isLoading && !isAuthenticated)) {
+  if (showSplash || isLoading) {
     return <SplashScreen />;
+  }
+  
+  if (!modeSelected) {
+      return (
+          <HashRouter>
+              <Routes>
+                  <Route path="*" element={<ModeSelectionScreen />} />
+              </Routes>
+          </HashRouter>
+      );
   }
 
   const AuthenticatedRoutes = () => (
@@ -89,15 +111,17 @@ const AppRouter: React.FC = () => {
 
   return (
     <HashRouter>
-      <ErrorBoundary>
-        {!isAuthenticated ? (
-          <UnauthenticatedRoutes />
-        ) : !isProfileComplete ? (
-          <OnboardingRoutes />
-        ) : (
-          <AuthenticatedRoutes />
-        )}
-      </ErrorBoundary>
+      <DeveloperProvider>
+        <ErrorBoundary>
+          {!isAuthenticated ? (
+            <UnauthenticatedRoutes />
+          ) : !isProfileComplete ? (
+            <OnboardingRoutes />
+          ) : (
+            <AuthenticatedRoutes />
+          )}
+        </ErrorBoundary>
+      </DeveloperProvider>
     </HashRouter>
   );
 };
