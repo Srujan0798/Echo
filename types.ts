@@ -11,16 +11,18 @@ export interface Profile {
   gender: 'Male' | 'Female' | 'Other' | '';
   lookingFor: 'Men' | 'Women' | 'Everyone' | '';
   vibeGraphic: string;
-  vibeHook: Blob | null; // Using Blob to simulate file object
-  voicePrompts: { id: number; prompt: string; answer: Blob | null }[];
+  vibeHook: Blob | null | 'recorded'; // Using Blob to simulate file object
+  voicePrompts: { id: number; prompt: string; answer: Blob | null | 'recorded' }[];
 }
 
 export type MatchStatus = 
   | 'NEW_MATCH'
-  | 'CALL_REQUESTED_BY_ME'
-  | 'CALL_REQUESTED_BY_THEM'
-  | 'CALL_ACCEPTED'
+  | 'QUESTION_SENT_BY_ME'
+  | 'QUESTION_RECEIVED'
+  | 'QNA_COMPLETE'
+  | 'CALL_READY'
   | 'IN_CALL'
+  | 'CALL_COMPLETED_WAITING'
   | 'CHAT_ACTIVE';
 
 export interface DiscoveryProfile {
@@ -31,7 +33,7 @@ export interface DiscoveryProfile {
   vibeGraphic: string;
   likesYou: boolean; // To simulate mutual attraction for demo
   vibeHookUrl?: string; // Mock URL
-  prompts?: { question: string; answerUrl: string }[];
+  prompts?: { question: string; answerText: string }[];
   imageUrl?: string; // For progressive reveal
 }
 
@@ -41,9 +43,24 @@ export interface Match {
   status: MatchStatus;
   timestamp: number; // Unix timestamp for last status change
   chatStartedTimestamp?: number; // Unix timestamp for when chat begins
-  iAmReadyToReveal?: boolean;
-  theyAreReadyToReveal?: boolean;
-  isRevealed?: boolean;
+  revealStatus?: {
+    softRevealUnlockedAt?: number;
+    userReadyAt?: number;
+    theirReadyAt?: number;
+    fullRevealAt?: number;
+  };
+  customQuestion?: {
+    askedBy: string; // User ID of the asker
+    questionAudio: Blob | null | 'recorded';
+    questionTimestamp?: number;
+    answerAudio?: Blob | null | 'recorded';
+    answerTimestamp?: number;
+  };
+  callDecision?: {
+    userDecision: 'CONTINUE' | 'NO_CONNECTION' | null;
+    theirDecision: 'CONTINUE' | 'NO_CONNECTION' | null;
+    decidedAt?: number;
+  }
 }
 
 export type MessageType = 'TEXT' | 'VOICE' | 'SYSTEM';
@@ -85,4 +102,11 @@ export interface OnboardingContextType {
   currentStep: number;
   setCurrentStep: (step: number) => void;
   totalSteps: number;
+}
+
+export interface MatchContextType {
+  matches: Match[];
+  addMatch: (profile: DiscoveryProfile, options?: { status?: MatchStatus, customQuestion?: Match['customQuestion'] }) => void;
+  updateMatch: (matchId: string, updates: Partial<Omit<Match, 'id' | 'profile'>>) => void;
+  removeMatch: (matchId: string) => void;
 }

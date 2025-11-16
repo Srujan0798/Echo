@@ -1,13 +1,19 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { mockProfiles } from '../../data/mockProfiles';
 import ProfileCard from '../../components/discover/ProfileCard';
 import FullProfileModal from '../../components/discover/FullProfileModal';
 import MatchModal from '../../components/discover/MatchModal';
-import { DiscoveryProfile, Match } from '../../types';
+import { DiscoveryProfile } from '../../types';
 import { useAuth } from '../../hooks/useAuth';
+import { useMatches } from '../../hooks/useMatches';
+import CustomQuestionModal from '../../components/matches/CustomQuestionModal';
+import EmptyState from '../../components/common/EmptyState';
+import { Home } from '../../components/icons';
 
 const DiscoverScreen: React.FC = () => {
   const { user } = useAuth();
+  const { addMatch } = useMatches();
+
   const [swipedProfiles, setSwipedProfiles] = useState<string[]>(() => {
     const saved = localStorage.getItem(`echo-swiped-${user?.id}`);
     return saved ? JSON.parse(saved) : [];
@@ -16,6 +22,7 @@ const DiscoverScreen: React.FC = () => {
   const [activeProfile, setActiveProfile] = useState<DiscoveryProfile | null>(null);
   const [isProfileModalOpen, setProfileModalOpen] = useState(false);
   const [matchedProfile, setMatchedProfile] = useState<DiscoveryProfile | null>(null);
+  const [isQuestionModalOpen, setQuestionModalOpen] = useState(false);
 
   const feedRef = useRef<HTMLDivElement>(null);
   
@@ -43,18 +50,6 @@ const DiscoverScreen: React.FC = () => {
   const handleLike = (profile: DiscoveryProfile) => {
     if (profile.likesYou) {
       setMatchedProfile(profile);
-      // Create and save the match
-      const currentMatches: Match[] = JSON.parse(localStorage.getItem(`echo-matches-${user?.id}`) || '[]');
-      const newMatch: Match = {
-        id: profile.id,
-        profile: profile,
-        status: 'NEW_MATCH',
-        timestamp: Date.now(),
-      };
-      // Avoid duplicate matches
-      if (!currentMatches.find(m => m.id === newMatch.id)) {
-        localStorage.setItem(`echo-matches-${user?.id}`, JSON.stringify([...currentMatches, newMatch]));
-      }
     }
     handleSwipe(profile.id);
   };
@@ -68,13 +63,24 @@ const DiscoverScreen: React.FC = () => {
     setProfileModalOpen(true);
   };
   
-  const handleRequestCallFromModal = () => {
-    if(matchedProfile && user) {
-        const matches: Match[] = JSON.parse(localStorage.getItem(`echo-matches-${user.id}`) || '[]');
-        const updatedMatches = matches.map(m => m.id === matchedProfile.id ? {...m, status: 'CALL_REQUESTED_BY_ME'} : m);
-        localStorage.setItem(`echo-matches-${user.id}`, JSON.stringify(updatedMatches));
-    }
+  const handleInitiateConnection = () => {
     setMatchedProfile(null);
+    setQuestionModalOpen(true);
+  };
+  
+  const handleSendQuestion = (questionAudio: Blob) => {
+    if(activeProfile && user) {
+        addMatch(activeProfile, {
+            status: 'QUESTION_SENT_BY_ME',
+            customQuestion: {
+                askedBy: user.id,
+                questionAudio,
+                questionTimestamp: Date.now(),
+            }
+        });
+    }
+    setQuestionModalOpen(false);
+    setActiveProfile(null); // Clear active profile after asking
   };
 
   return (
@@ -92,11 +98,12 @@ const DiscoverScreen: React.FC = () => {
           </div>
         ))
       ) : (
-        <div className="h-full w-full flex items-center justify-center text-center p-8">
-            <div>
-                <h2 className="text-2xl font-bold text-white">That's everyone for now!</h2>
-                <p className="text-[#B3B3B3] mt-2">Check back later for new profiles.</p>
-            </div>
+        <div className="h-full w-full flex items-center justify-center snap-start">
+            <EmptyState
+                icon={<Home size={48} />}
+                title="That's everyone for now!"
+                description="Check back later for new profiles or adjust your preferences."
+            />
         </div>
       )}
 
@@ -110,8 +117,26 @@ const DiscoverScreen: React.FC = () => {
         isOpen={!!matchedProfile}
         currentUser={user}
         matchedProfile={matchedProfile}
-        onClose={() => setMatchedProfile(null)}
-        onRequestCall={handleRequestCallFromModal}
+        onClose={() => {
+            if(matchedProfile) addMatch(matchedProfile); // Add as NEW_MATCH if they keep exploring
+            setMatchedProfile(null);
+        }}
+        onInitiateConnection={() => {
+            setActiveProfile(matchedProfile); // Set profile to ask question to
+            setMatchedProfile(null);
+            setQuestionModalOpen(true);
+        }}
+      />
+      
+      <CustomQuestionModal
+        isOpen={isQuestionModalOpen}
+        profile={activeProfile}
+        onClose={() => {
+            if(activeProfile) addMatch(activeProfile); // Add as NEW_MATCH if they close
+            setQuestionModalOpen(false);
+            setActiveProfile(null);
+        }}
+        onSend={handleSendQuestion}
       />
     </div>
   );

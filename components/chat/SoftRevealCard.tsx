@@ -12,7 +12,8 @@ const SoftRevealCard: React.FC<SoftRevealCardProps> = ({ profileImageUrl }) => {
                 <img 
                     src={profileImageUrl}
                     alt="Blurred profile" 
-                    className="w-full h-full object-cover blur-xl scale-110"
+                    className="w-full h-full object-cover scale-110"
+                    style={{ filter: 'blur(20px) brightness(0.7) contrast(1.2)' }}
                 />
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                    <p className="text-white font-bold text-3xl opacity-30">?</p>

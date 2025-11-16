@@ -1,10 +1,47 @@
-import React from 'react';
+
+import React, { useState, useMemo } from 'react';
 import { useOnboarding } from '../../../hooks/useOnboarding';
-// Fix: Cannot find name 'Profile'. Imported the Profile type.
 import { Profile } from '../../../types';
 
 const BasicInfoStep: React.FC = () => {
   const { profile, updateProfile } = useOnboarding();
+  const [errors, setErrors] = useState({ name: '', age: '' });
+  const [shake, setShake] = useState(''); // State to trigger shake animation
+
+  const validateName = (name: string) => {
+    if (name.length < 2) return "Name must be at least 2 characters.";
+    if (name.length > 50) return "Name cannot exceed 50 characters.";
+    if (!/^[a-zA-Z\s'-]+$/.test(name)) return "Name can only contain letters, spaces, hyphens, and apostrophes.";
+    return "";
+  };
+
+  const validateAge = (age: number) => {
+    if (age < 18) return "You must be at least 18 years old.";
+    if (age > 65) return "Age cannot be over 65.";
+    return "";
+  };
+  
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const name = e.target.value;
+      const error = validateName(name);
+      updateProfile({ name });
+      setErrors(prev => ({ ...prev, name: error }));
+      if (error) {
+          setShake('name');
+          setTimeout(() => setShake(''), 500);
+      }
+  };
+
+  const handleAgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const age = parseInt(e.target.value, 10);
+      const error = validateAge(age);
+      updateProfile({ age });
+      setErrors(prev => ({ ...prev, age: error }));
+      if (error) {
+          setShake('age');
+          setTimeout(() => setShake(''), 500);
+      }
+  };
 
   const renderSelect = (id: string, value: string, onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void, options: string[], placeholder: string) => (
     <select
@@ -30,10 +67,11 @@ const BasicInfoStep: React.FC = () => {
                     type="text"
                     id="name"
                     value={profile.name}
-                    onChange={(e) => updateProfile({ name: e.target.value })}
-                    className="w-full bg-[#282828] border border-gray-600 text-white rounded-lg p-3 focus:ring-[#FF6B6B] focus:border-[#FF6B6B] focus:outline-none"
+                    onChange={handleNameChange}
+                    className={`w-full bg-[#282828] border ${errors.name ? 'border-red-500' : 'border-gray-600'} text-white rounded-lg p-3 focus:ring-[#FF6B6B] focus:border-[#FF6B6B] focus:outline-none ${shake === 'name' ? 'animate-shake' : ''}`}
                     placeholder="e.g. Alex"
                 />
+                {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
             </div>
             <div>
                 <label htmlFor="age" className="block text-sm font-medium text-[#B3B3B3] mb-2">Age</label>
@@ -41,11 +79,12 @@ const BasicInfoStep: React.FC = () => {
                     type="number"
                     id="age"
                     value={profile.age}
-                    onChange={(e) => updateProfile({ age: parseInt(e.target.value, 10) })}
+                    onChange={handleAgeChange}
                     min="18"
                     max="65"
-                    className="w-full bg-[#282828] border border-gray-600 text-white rounded-lg p-3 focus:ring-[#FF6B6B] focus:border-[#FF6B6B] focus:outline-none"
+                    className={`w-full bg-[#282828] border ${errors.age ? 'border-red-500' : 'border-gray-600'} text-white rounded-lg p-3 focus:ring-[#FF6B6B] focus:border-[#FF6B6B] focus:outline-none ${shake === 'age' ? 'animate-shake' : ''}`}
                 />
+                {errors.age && <p className="text-red-500 text-xs mt-1">{errors.age}</p>}
             </div>
              <div>
                 <label htmlFor="gender" className="block text-sm font-medium text-[#B3B3B3] mb-2">Your Gender</label>

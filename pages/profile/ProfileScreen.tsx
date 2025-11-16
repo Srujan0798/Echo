@@ -7,6 +7,8 @@ import { UserSettings } from '../../types';
 import SettingsSection from '../../components/settings/SettingsSection';
 import SettingsItem from '../../components/settings/SettingsItem';
 import ConfirmationModal from '../../components/settings/ConfirmationModal';
+import { getSettings, saveSettings } from '../../utils/localStorage';
+import Toast from '../../components/Toast';
 
 const defaultSettings: UserSettings = {
   notifications: { matches: true, messages: true },
@@ -18,22 +20,37 @@ const ProfileScreen: React.FC = () => {
   const navigate = useNavigate();
   const [settings, setSettings] = useState<UserSettings>(defaultSettings);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [showSaveToast, setShowSaveToast] = useState(false);
 
   useEffect(() => {
     if (user) {
-      const savedSettings = localStorage.getItem(`echo-settings-${user.id}`);
+      const savedSettings = getSettings(user.id);
       if (savedSettings) {
-        setSettings(JSON.parse(savedSettings));
+        setSettings(savedSettings);
       }
     }
   }, [user]);
 
   const updateSettings = (newSettings: Partial<UserSettings>) => {
-    const updated = { ...settings, ...newSettings };
-    setSettings(updated);
-    if (user) {
-      localStorage.setItem(`echo-settings-${user.id}`, JSON.stringify(updated));
-    }
+    setSettings(prevSettings => {
+        const updated = {
+            ...prevSettings,
+            ...newSettings,
+            notifications: {
+                ...prevSettings.notifications,
+                ...newSettings.notifications,
+            },
+            privacy: {
+                ...prevSettings.privacy,
+                ...newSettings.privacy,
+            },
+        };
+        if (user) {
+            saveSettings(user.id, updated);
+        }
+        setShowSaveToast(true);
+        return updated;
+    });
   };
   
   const handleDeleteAccount = () => {
@@ -65,24 +82,31 @@ const ProfileScreen: React.FC = () => {
 
       <div className="space-y-6">
         <SettingsSection title="Profile">
-          <SettingsItem icon={<Mic />} label="Edit Voice Profile">
+          <SettingsItem icon={<Mic />} label="Edit Profile" onClick={() => navigate('/profile/edit')}>
             <ChevronRight />
           </SettingsItem>
         </SettingsSection>
         
         <SettingsSection title="Account Settings">
-          <SettingsItem icon={<Shield />} label="Notifications">
-             <input type="checkbox" className="toggle toggle-accent" checked={settings.notifications.messages} onChange={e => updateSettings({ notifications: {...settings.notifications, messages: e.target.checked}})} />
+          <SettingsItem icon={<Shield />} label="Match Notifications">
+{/* @FIX: Pass the full notifications object to satisfy the UserSettings type. */}
+             <input type="checkbox" className="toggle toggle-accent" checked={settings.notifications.matches} onChange={e => updateSettings({ notifications: { ...settings.notifications, matches: e.target.checked}})} />
+          </SettingsItem>
+           <SettingsItem icon={<Shield />} label="Message Notifications">
+{/* @FIX: Pass the full notifications object to satisfy the UserSettings type. */}
+             <input type="checkbox" className="toggle toggle-accent" checked={settings.notifications.messages} onChange={e => updateSettings({ notifications: { ...settings.notifications, messages: e.target.checked}})} />
           </SettingsItem>
         </SettingsSection>
         
         <SettingsSection title="Privacy">
            <SettingsItem icon={<Shield />} label="Show me on ECHO">
-             <input type="checkbox" className="toggle toggle-accent" checked={settings.privacy.showOnEcho} onChange={e => updateSettings({ privacy: {...settings.privacy, showOnEcho: e.target.checked}})} />
+{/* @FIX: Pass the full privacy object to satisfy the UserSettings type. */}
+             <input type="checkbox" className="toggle toggle-accent" checked={settings.privacy.showOnEcho} onChange={e => updateSettings({ privacy: { ...settings.privacy, showOnEcho: e.target.checked}})} />
            </SettingsItem>
            <div className="p-4">
              <label className="text-sm text-[#B3B3B3] mb-2 block">Distance Preference</label>
-             <input type="range" min="1" max="100" value={settings.privacy.distance} onChange={e => updateSettings({ privacy: {...settings.privacy, distance: parseInt(e.target.value)} })} className="range range-xs range-accent" />
+{/* @FIX: Pass the full privacy object to satisfy the UserSettings type. */}
+             <input type="range" min="1" max="100" value={settings.privacy.distance} onChange={e => updateSettings({ privacy: { ...settings.privacy, distance: parseInt(e.target.value)} })} className="range range-xs range-accent" />
              <div className="text-right text-sm font-bold">{settings.privacy.distance} mi.</div>
            </div>
         </SettingsSection>
@@ -106,6 +130,8 @@ const ProfileScreen: React.FC = () => {
       >
         <p className="text-[#B3B3B3]">Are you sure you want to permanently delete your account? All of your matches and data will be lost. This action cannot be undone.</p>
       </ConfirmationModal>
+
+      <Toast message="Settings saved!" show={showSaveToast} onDismiss={() => setShowSaveToast(false)} />
     </div>
   );
 };

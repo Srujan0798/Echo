@@ -66,7 +66,8 @@ const VoicePromptsStep: React.FC = () => {
                     <VoiceRecorder 
                         maxDuration={30}
                         onRecordingComplete={(blob) => handleRecordingUpdate(promptItem.id, blob)}
-                        existingRecording={promptItem.answer}
+                        // @FIX: Ensure the prop type matches `Blob | null`. If the value is 'recorded' (a string), pass a new Blob to keep the UI state as 'recorded'.
+                        existingRecording={typeof promptItem.answer !== 'string' ? promptItem.answer : new Blob()}
                     />
                 </div>
             ))}

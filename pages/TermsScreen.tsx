@@ -12,7 +12,7 @@ const TermsScreen: React.FC = () => {
     <PageLayout className="justify-start pt-16">
       <div className="flex flex-col h-full w-full">
         <h1 className="text-3xl font-bold mb-6 text-center">Terms & Conditions</h1>
-        <div className="flex-grow bg-[#282828] p-4 rounded-lg overflow-y-auto h-96 mb-6 text-sm text-[#B3B3B3] space-y-4">
+        <div className="flex-grow bg-[#282828] p-4 rounded-lg overflow-y-auto h-96 mb-6 text-sm text-[#B3B3B3] space-y-4 leading-relaxed">
           <h2 className="text-white font-bold">1. Introduction</h2>
           <p>Welcome to ECHO. By using our app, you agree to these terms. Please read them carefully.</p>
           <h2 className="text-white font-bold">2. User Content</h2>

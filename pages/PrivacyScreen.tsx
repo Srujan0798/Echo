@@ -11,7 +11,7 @@ const PrivacyScreen: React.FC = () => {
     <PageLayout className="justify-start pt-16">
       <div className="flex flex-col h-full w-full">
         <h1 className="text-3xl font-bold mb-6 text-center">Privacy Policy</h1>
-        <div className="flex-grow bg-[#282828] p-4 rounded-lg overflow-y-auto h-96 mb-6 text-sm text-[#B3B3B3] space-y-4">
+        <div className="flex-grow bg-[#282828] p-4 rounded-lg overflow-y-auto h-96 mb-6 text-sm text-[#B3B3B3] space-y-4 leading-relaxed">
           <h2 className="text-white font-bold">1. Information We Collect</h2>
           <p>We collect information you provide directly to us, such as when you create an account, create or modify your profile, and upload voice recordings. This includes your name, email, and any voice data you provide.</p>
           <h2 className="text-white font-bold">2. How We Use Information</h2>

@@ -52,7 +52,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ profile, onLike, onPass, onVi
           <p className="text-lg font-medium text-gray-200 drop-shadow-md mb-4">{profile.distance} miles away</p>
           
           <div className="flex items-center gap-3 w-full">
-            <button onClick={() => setIsPlaying(!isPlaying)} className="flex-shrink-0">
+            <button onClick={() => setIsPlaying(!isPlaying)} className="flex-shrink-0" aria-label={isPlaying ? "Pause VibeHook" : "Play VibeHook"}>
                <AudioWaveform isPlaying={isPlaying} />
             </button>
           </div>
@@ -61,17 +61,17 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ profile, onLike, onPass, onVi
         <div className="absolute bottom-6 inset-x-6 flex justify-between items-center">
           <button 
             onClick={() => onPass(profile)}
-            className="bg-white/20 border-2 border-white rounded-full p-5 shadow-lg backdrop-blur-sm transform transition-transform hover:scale-110"
+            className="group bg-white/20 border-2 border-white rounded-full p-5 shadow-lg backdrop-blur-sm transform transition-transform hover:scale-110 active:scale-95"
             aria-label="Pass on profile"
           >
-            <X size={40} className="text-white" />
+            <X size={40} className="text-white transition-transform group-active:scale-125" />
           </button>
           <button 
             onClick={() => onLike(profile)}
-            className="bg-[#FF6B6B] rounded-full p-5 shadow-lg transform transition-transform hover:scale-110"
+            className="group bg-[#FF6B6B] rounded-full p-5 shadow-lg transform transition-transform hover:scale-110 active:scale-95"
             aria-label="Like profile"
           >
-            <Heart size={40} className="text-white" fill="white" />
+            <Heart size={40} className="text-white transition-transform group-active:scale-125" fill="white" />
           </button>
         </div>
       </div>

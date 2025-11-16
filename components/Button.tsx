@@ -17,7 +17,7 @@ const Button: React.FC<ButtonProps> = ({
   className = '',
   ...props
 }) => {
-  const baseStyles = 'w-full flex items-center justify-center font-bold py-3 px-4 rounded-full transition-transform duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#121212]';
+  const baseStyles = 'w-full flex items-center justify-center font-bold py-3 px-4 rounded-full transition-all duration-200 ease-in-out transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#121212]';
 
   const variantStyles = {
     primary: 'bg-[#FF6B6B] text-white hover:bg-opacity-90 focus:ring-[#FF6B6B]',

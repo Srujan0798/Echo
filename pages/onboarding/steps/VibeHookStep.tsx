@@ -15,7 +15,8 @@ const VibeHookStep: React.FC = () => {
         <VoiceRecorder
             maxDuration={15}
             onRecordingComplete={(blob) => updateProfile({ vibeHook: blob })}
-            existingRecording={profile.vibeHook}
+            // @FIX: Ensure the prop type matches `Blob | null`. If the value is 'recorded' (a string), pass a new Blob to keep the UI state as 'recorded'.
+            existingRecording={typeof profile.vibeHook !== 'string' ? profile.vibeHook : new Blob()}
         />
     </div>
   );

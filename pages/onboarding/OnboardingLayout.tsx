@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useOnboarding } from '../../hooks/useOnboarding';
@@ -29,7 +30,9 @@ const OnboardingLayout: React.FC = () => {
   const isNextDisabled = useMemo(() => {
     switch(onboardingSteps[currentStepIndex]) {
         case 'basic-info':
-            return !profile.name || !profile.age || !profile.gender || !profile.lookingFor;
+            const nameValid = profile.name.length >= 2 && profile.name.length <= 50 && /^[a-zA-Z\s'-]+$/.test(profile.name);
+            const ageValid = profile.age >= 18 && profile.age <= 65;
+            return !nameValid || !ageValid || !profile.gender || !profile.lookingFor;
         case 'vibe-hook':
             return !profile.vibeHook;
         case 'voice-prompts':
