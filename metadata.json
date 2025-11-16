@@ -1,0 +1,5 @@
+{
+  "name": "ECHO Dating",
+  "description": "A dating app where you connect with people through their voice first. 'Date the Voice, Then the Person.' This application provides the initial authentication and onboarding flow.",
+  "requestFramePermissions": []
+}
